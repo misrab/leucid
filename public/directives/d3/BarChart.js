@@ -1,4 +1,4 @@
-var app = angular.module('app');
+var app = angular.module('d3Primitives');
 
 
 app.directive('barChart', function(d3Service) {
@@ -15,11 +15,13 @@ app.directive('barChart', function(d3Service) {
 				// the action is here...
 				
 				// set global variables and create svg
-				var height = attrs.height || 300;
+				var height = attrs.height || 300; 
+				var legend_height = 50;
+
 				var svg = d3.select(element[0])
 		            .append('svg')
 		            .style('width', '100%')
-		            .style('height', height);
+		            .style('height', height + legend_height);
 		        var width = d3.select(element[0]).node().offsetWidth;
 		        var margin = 20;
 		        var color = d3.scale.category20();
@@ -70,42 +72,189 @@ app.directive('barChart', function(d3Service) {
 							if (score < min) min = score;
 						}
 					}
-					// var xScale = d3.scale.linear()
-					// 	.domain([minScore, maxScore])
-					// 	.range([0, width]);
+					
+					// put twice required padding on top
+					// because yAxis was being cut.
+					// d3.axis() quirk I believe...
 					var yScale = d3.scale.linear()
 						.domain([min, max])
-						.range([margin/2, height - margin/2]);
+						.range([margin/2, height - margin]);
+					var yInvertedScale = d3.scale.linear()
+						.domain([min, max])
+						.range([height - margin/2, margin]);
 					
+					var tooltip = drawTooltip();
 					// draw axes
-					drawAxes(yScale);
+					drawAxes(yScale, yInvertedScale);
 
 					// draw rects
-					drawBars(data, yScale, numGroups, width);
+					drawBars(data, yScale, numGroups, width, tooltip);
+
+					// draw legend
+					drawLegend(data);
+
+					
+
 				};
 
+				function drawTooltip() {
+					var tooltip = d3.select("body")
+						.append("div")
+						.style("position", "absolute")
+						.style("font-weight", "bold")
+						.style("text-align", "center")
+						.style("border", "1px solid grey")
+						.style("background-color", "#eaeaea")
+						.style("padding", "5px")
+						.style("z-index", "10")
+						.style("visibility", "hidden")
+						.text("a simple tooltip");
 
-				function drawBars(data, yScale, numGroups, width) {
+					return tooltip;
+
+				};
+
+				function unhighlightSubgroup(name) {
+					svg.selectAll('rect:not([data-subgroup="'+name+'"]), g:not([data-subgroup="'+name+'"])[data-type="legend"]')
+						.style("opacity", 0.8);
+				};
+				function highlightSubgroup(name) {
+					svg.selectAll('rect:not([data-subgroup="'+name+'"]), g:not([data-subgroup="'+name+'"])[data-type="legend"]')
+						.style("opacity", 0.1);
+				};
+
+				function drawLegend(data) {
+				 // find all subgroup names
+				 var names = [];
+				 for (k in data) {
+				 	for (index in data[k]) {
+				 		if (names.indexOf(data[k][index].name) == -1) names.push(data[k][index].name);
+				 	}
+				 }
+				 if (names.length===0) return;
+
+				 var legendWidth = width / names.length;
+				 var boxDiameter = 10;
+
+				 for (index in names) {
+				 	var x = legendWidth * index + margin / 2;
+				 	var name = names[index];
+				 	var g = svg.append("g")
+				 		.attr("data-subgroup", name)
+				 		.attr("data-type", "legend")
+					 	.attr("transform", function(d, i) {
+					 		return "translate(" + x + "," + (height + margin/2) + ")";
+					 	})
+					 	.style("cursor", "pointer")
+					 	.on('mouseover', function(d) {
+							highlightSubgroup(d3.select(this).attr("data-subgroup"));
+
+						})
+						.on('mouseout', function(d) {
+							unhighlightSubgroup(d3.select(this).attr("data-subgroup"));
+						});
+
+					g.append("rect")
+						.attr("width", boxDiameter)
+						.attr("data-subgroup", name)
+						.attr("height", boxDiameter)
+						.attr('fill', color(name));
+					g.append("text")
+						.text(name)
+						.attr("x", boxDiameter + margin/2)
+						.attr("dominant-baseline", "hanging");
+				 }
+				};
+
+				function drawBars(data, yScale, numGroups, width, tooltip) {
 					// each group gets equal width, whether
 					// stacked or not
-					var numSpaces = numGroups + 1; // nodes - 1 + 2 outsides
-					var groupWidth = (width - margin) / numSpaces;
+					var numSpaces = 2*numGroups; // nodes - 1 + 2 outsides
+					var groupWidth = (width - margin) / (numSpaces+1);
 
-					var startX = 0;
-					for (var group=0; group < numGroups; group++) {
+					var startX = 0;	
+
+					for (k in data) {
 						startX += groupWidth;
-
 						var g = svg.append("g")
+							.attr("data-group", k)
 							.attr("transform", function(d) {
 								return "translate(" + startX + "," + (height - yScale(0) - margin/2) + ")";
+							})
+							.attr("width", groupWidth)
+							.on('mouseover', function(d) {
+								//var group = d3.select(this).attr("data-group");
+								d3.select(this).style("opacity", 0.7);
+							})
+							.on('mouseout', function(d) {
+								d3.select(this).style("opacity", 0.8);
 							});
-						g.append("rect").attr("width", 20).attr("height", 20).attr('fill', "blue");
 
-						startX += groupWidth; 
+						// append sub-groups
+						var numSubgroups = data[k].length;
+						var subgroupWidth = groupWidth/numSubgroups;
+						var rectGroup = g.selectAll("g")
+							.data(data[k]).enter()
+							.append("g")
+							.attr("transform", function(d, i) {
+								var x = i * subgroupWidth;
+								var y = d.score < 0 ?  1 : (-yScale(Math.abs(d.score))/2-1);
+								return "translate(" + x + "," + y + ")";
+							});
+
+						rectGroup.append("rect")
+							.attr("data-subgroup", function(d) {
+								return d.name;
+							})
+							.attr("data-group", k)
+							.attr("width", subgroupWidth)
+							.attr("height", 0)
+							// .attr("y", function(d) {
+							// 	// 1px modified for axis
+							// 	return d.score < 0 ?  1 : (-yScale(Math.abs(d.score))/2-1);
+							// })
+							// .attr("x", function(d, i) {
+							// 	return i * subgroupWidth;
+							// })
+							.attr('fill', function(d) {
+								return color(d.name);
+							})
+							.style("opacity", 0.8)
+							.on("mouseover", function(d) {
+								var group = d3.select(this).attr("data-group");
+								var subgroup = d3.select(this).attr("data-subgroup");
+								tooltip.html(group +  "<br />"+ subgroup + "<br />" + String(Math.round(d.score * 100) / 100));
+								return tooltip.style("visibility", "visible");
+							})
+							.on("mousemove", function(){
+								return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");
+							})
+							.on("mouseout", function(){
+								return tooltip.style("visibility", "hidden");
+						})
+							.transition()
+								.duration(800)
+							 	.ease("linear")
+								.attr("height", function(d) {
+									return yScale(Math.abs(d.score)) / 2;
+								});
+
+						// rectGroup.append('text')
+						// 	.text(function(d) {
+						// 		return "(" + parseInt(d.score) + ")";
+						// 	})
+						// 	// .attr("x", function(d, i) {
+						// 	// 	return i * subgroupWidth;
+						// 	// })
+						// 	.attr("y", margin)
+						// 	.attr("dominant-baseline", "central")
+						// 	.attr("x", subgroupWidth/2);
+
+						startX += groupWidth;
 					}
 				};
 
-				function drawAxes(yScale) {
+				function drawAxes(yScale, yInvertedScale) {
 
 					var xAxis = svg.append("g")
 						.attr("class", "x-axis")
@@ -113,154 +262,33 @@ app.directive('barChart', function(d3Service) {
 							// ! don't forget to flip y coordinate
 							return "translate(" + margin/2 + "," + (height - yScale(0) - margin/2) + ")";
 						});
+						
 					xAxis.append("line")
 						.attr("x1", 0)
 						.attr("y1", 0)
 						.attr("x2", width-margin/2)
 						.attr("y2", 0)
-						.attr("stroke", "black")
+						.attr("stroke", "lightgrey")
 						.attr("stroke-width", 1);
-						//.attr("marker-end", "url(#arrowHead)");
-					// xAxis.append("text")
-					// 	.text(function(d) {
-					// 		return xLabel;
-					// 	})
-					// 	.attr("class", "label")
-				 //      	.attr("x", width - margin)
-				 //      	.attr("y", 2)
-				 //      	.attr("dominant-baseline", "hanging")
-				 //      	.style("font-size", 12 + "px")
-				 //      	.style("text-anchor", "end");
 
 				 	var yAxis = svg.append("g")
 						.attr("class", "y-axis")
+						.attr("fill", "none")
+					    .attr("stroke", "grey")
+					    .attr("stroke-width", 1)
+					    //.style("shape-rendering", "crispEdges")
+					    //.style("font-size", 10)
 						.attr("transform", function(d) {
-							return "translate(" + margin/2 + "," + (height) + ")";
-						});
-					yAxis.append("line")
-						.attr("x1", 0)
-						.attr("y1", 0)
-						.attr("x2", 0)
-						.attr("y2", -(height - margin/2))
-						.attr("stroke", "black");
-						//.attr("marker-end", "url(#arrowHead)");
-					// yAxis.append("text")
-					// 	.text(function(d) {
-					// 		return yLabel;
-					// 	})
-					// 	.attr("class", "label")
-				 //      	.attr("x", 0)
-				 //      	.attr("y", -(height))
-				 //      	.style("font-size", 12 + "px");
+							return "translate(" + margin/2 + "," + -margin/2 + ")";
+						})
+						.call(d3.svg.axis()
+					    	.scale(yInvertedScale)
+					    	.orient("right")
+					    	.ticks(5)
+					    	.tickSize(5, 0)
+					    );
 				};
 			});
 		}
 	};
 });
-
-
-// 	          	// our custom d3 code
-// 	          	scope.render = function(data) {
-// 					// remove all previous items before render
-// 					svg.selectAll('*').remove();
-
-// 					// If we don't pass any data, return out of the element
-// 					if (!data) return;
-
-// 					// setup variables
-// 					// DOM-dancing to get parent width
-// 					var width = d3.select(element[0]).node().offsetWidth - margin,
-// 						// calculate the height
-// 						//attrs.height || 
-// 						height = scope.data.length * (barHeight + barPadding);
-
-
-// 					var minScore = d3.min(data, function(d) {
-// 						return d.score;
-// 					});
-// 					var maxScore = d3.max(data, function(d) {
-// 						return d.score;
-// 					});
-
-
-
-// 					var totalScale = d3.scale.linear()
-// 						.domain([minScore, maxScore])
-// 						.range([margin/2, width - margin]);
-
-// 					// console.log(minScore + ", " + maxScore);
-// 					// console.log(totalScale(0));
-
-
-// 					// set the height based on the calculations above
-// 					svg.attr('height', height + margin);
-
-// 					// draw the center line if exist negatives
-// 					if (minScore < 0) {
-// 						svg.append("line")
-// 							.attr("x1", totalScale(0))
-// 							.attr("y1", -margin/2)
-// 							.attr("x2", totalScale(0))
-// 							.attr("y2", height + margin/2)
-// 							.style("stroke", "black")
-// 							.style("stroke-width", 2);
-// 							//.style("stroke-dasharray", "2,2");
-// 							//.style('opacity', 0);
-// 					}
-					
-
-// 					//create the rectangles for the bar chart
-// 					var group = svg.selectAll('g')
-// 						.data(data).enter()
-// 						.append("g")
-// 						.attr("transform", function(d, i) {
-// 							var x;
-// 							if (d.score < 0) {
-// 								var width = totalScale(0) - totalScale(d.score);
-// 								x = totalScale(0) - width - 2; // styling: just off of 0 line
-// 							} else {
-// 								x = minScore < 0 ? totalScale(0) : totalScale(minScore);
-// 							}
-
-// 							//var x = d.score < 0 ? totalScale(0) - totalScale(d.score) : totalScale(0);
-// 							var y = margin/2 + i * (barHeight + barPadding);
-// 							return "translate(" + x + "," + y + ")";
-// 						});
-
-// 					group.append('rect')
-// 						.attr('height', barHeight)
-// 						.attr('width', 0)
-// 						.attr('x', 2) // styling: just off of 0 line
-// 						.attr('fill', function(d) { return color(d.name); })
-// 						.transition()
-// 							.duration(1000)
-// 							.attr('width', function(d) {
-// 								var width;
-// 								if (d.score < 0) {
-// 									width = totalScale(0) - totalScale(d.score);
-// 								} else {
-// 									width = totalScale(d.score);// - totalScale(0);
-// 								}
-// 								return width;
-// 							});
-
-// 					var fontSize = barHeight/2; // - 2*barPadding;
-// 					group.append("text")
-// 						.text(function(d) {
-// 							return d.name + " (" + d.score + ")";
-// 						})
-// 						.attr("x", margin/2)
-// 						.attr("y", barHeight/2)
-// 						//.style("text-anchor", "middle")
-// 						.attr("fill", "white")
-// 						.attr("dominant-baseline", "central")
-// 						.attr("font-family", "sans-serif")
-// 						.style("font-weight", "bold")
-// 						.attr("font-size", function(d) {
-// 							return fontSize;
-// 						});
-// 	          	}; // end of scope.render()
-// 			}); // end of d3 then()
-// 		} // end of link function
-// 	}; // end of returned object
-// });

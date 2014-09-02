@@ -1,6 +1,6 @@
 var app = angular.module('app');
 
-
+var start = true; // for progressData() $scope.$apply();
 
 app.controller('LandingController', function($scope, d3Service) {
 	init();
@@ -8,15 +8,40 @@ app.controller('LandingController', function($scope, d3Service) {
   /*
     Function definitions
   */
-
+ 
 	function init() {
-    $scope.barBasicData = {
-      group1: [
-        { name: "bob", score: 4 },
-        { name: "alice", score: 5 },
-        { name: "henry", score: -3 }
+    progressData();
+    //setInterval(progressData, 5000);
+  };
+
+  // channge data over time for pretty
+  function progressData() {
+    $scope.barGroupedData = {
+      "Group 1": [
+        { name: "Category 1", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 },
+        { name: "Category 2", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 },
+        { name: "Category 3", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 }
+      ],
+      "Group 2": [
+        { name: "Category 1", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 }
+      ],
+      "Group 3": [
+        { name: "Category 1", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 },
+        { name: "Category 2", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 },
+        { name: "Category 3", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 }
       ]
     };
+
+    $scope.barBasicData = {
+      "Title": [
+        { name: "Category 1", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 },
+        { name: "Category 2", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 },
+        { name: "Category 3", score: Math.random() < 0.5 ? Math.random()*5 : -Math.random()*5 }
+      ]
+    };
+
+    if (start===false) { $scope.$apply(); }
+    else { start = false; }
   };
 });
 

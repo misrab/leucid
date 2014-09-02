@@ -1,7 +1,7 @@
 var app = angular.module('app', [
 	'ngRoute',
 	'ngCookies',
-  'd3',
+  'd3Primitives',
   'hljs' // syntax highlighting in landing.html
   //'http-auth-interceptor',
 	// 'angularFileUpload'
