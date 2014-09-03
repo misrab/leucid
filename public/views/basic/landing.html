@@ -41,13 +41,39 @@
 		<h2>Time Series</h2>
 
 		<div class="row text-center">
-			<div class="col-md-6">
-				<h3>Static</h3>
+			<div class="col-md-4">
+				<h3>Basic</h3>
+
+				<time-series data="staticTimeSeriesData" y-label="Total" recentdata=""></time-series>
 			</div>
 
-			<div class="col-md-6">
+			<div class="col-md-4">
+				<h3>Smooth</h3>
+
+				<time-series smooth="true" data="staticTimeSeriesData" y-label="Total" recentdata=""></time-series>
+			</div>
+
+
+			<div class="col-md-4">
 				<h3>Dynamic</h3>
+
+				<time-series smooth="true" data="staticTimeSeriesData" y-label="Total" recentdata="timeSeriesRecentData"></time-series>
 			</div>
 		</div>
 	</div>
 </div>
+<!-- 
+
+<div class="row text-center big_space_top">
+	<div class="col-md-6">
+		<h2>Scatter Plots</h2>
+		<div class="big_space_top"></div>
+		<scatter-plot height="450" data="scatterData"></scatter-plot>
+	</div>
+
+	<div class="col-md-6">
+		<h2>Graphs</h2>
+		<div class="big_space_top"></div>
+		<graph data="graphData"></graph>
+	</div>
+</div> -->

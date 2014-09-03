@@ -92,9 +92,6 @@ app.directive('barChart', function(d3Service) {
 
 					// draw legend
 					drawLegend(data);
-
-					
-
 				};
 
 				function drawTooltip() {
@@ -171,7 +168,6 @@ app.directive('barChart', function(d3Service) {
 					// stacked or not
 					var numSpaces = 2*numGroups; // nodes - 1 + 2 outsides
 					var groupWidth = (width - margin) / (numSpaces+1);
-
 					var startX = 0;	
 
 					for (k in data) {
@@ -183,12 +179,12 @@ app.directive('barChart', function(d3Service) {
 							})
 							.attr("width", groupWidth)
 							.on('mouseover', function(d) {
-								//var group = d3.select(this).attr("data-group");
 								d3.select(this).style("opacity", 0.7);
 							})
 							.on('mouseout', function(d) {
 								d3.select(this).style("opacity", 0.8);
 							});
+							
 
 						// append sub-groups
 						var numSubgroups = data[k].length;
@@ -209,13 +205,6 @@ app.directive('barChart', function(d3Service) {
 							.attr("data-group", k)
 							.attr("width", subgroupWidth)
 							.attr("height", 0)
-							// .attr("y", function(d) {
-							// 	// 1px modified for axis
-							// 	return d.score < 0 ?  1 : (-yScale(Math.abs(d.score))/2-1);
-							// })
-							// .attr("x", function(d, i) {
-							// 	return i * subgroupWidth;
-							// })
 							.attr('fill', function(d) {
 								return color(d.name);
 							})
@@ -230,25 +219,18 @@ app.directive('barChart', function(d3Service) {
 								return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");
 							})
 							.on("mouseout", function(){
-								return tooltip.style("visibility", "hidden");
-						})
+								return tooltip.style("visibility", "hidden")
+							})
+							.on('click', function(d) {
+								var c = d3.select(this).attr("fill") === "#FFE135" ? color(d.name) : "#FFE135";
+								d3.select(this).attr("fill", c);
+							})
 							.transition()
 								.duration(800)
 							 	.ease("linear")
 								.attr("height", function(d) {
 									return yScale(Math.abs(d.score)) / 2;
 								});
-
-						// rectGroup.append('text')
-						// 	.text(function(d) {
-						// 		return "(" + parseInt(d.score) + ")";
-						// 	})
-						// 	// .attr("x", function(d, i) {
-						// 	// 	return i * subgroupWidth;
-						// 	// })
-						// 	.attr("y", margin)
-						// 	.attr("dominant-baseline", "central")
-						// 	.attr("x", subgroupWidth/2);
 
 						startX += groupWidth;
 					}
