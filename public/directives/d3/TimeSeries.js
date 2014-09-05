@@ -121,12 +121,12 @@ app.directive('timeSeries', function(d3Service) {
 					    .domain([scope.min, scope.max])
 					    .range([margin/2, height - margin/2]);
 
-
+					scope.LOCKED = true;
     				for (k in newVals) {
     					scope.isolatedData[k].push(newVals[k]);
     					
     					var path = svg.select('path[data-category="'+k+'"]');
-    					scope.LOCKED = true;
+
     					path
     						.attr("d", scope.line)
     						.attr("transform", null)
@@ -142,7 +142,6 @@ app.directive('timeSeries', function(d3Service) {
     					scope.isolatedData[k].shift();
 
     				}
-    				console.log(scope.isolatedData);
 
     				scope.LOCKED = false;
 	          	};
@@ -220,7 +219,7 @@ app.directive('timeSeries', function(d3Service) {
 						    .attr("data-type", "path")
 						  	.append("path")
 						    	.datum(scope.isolatedData[k])
-						    	//.attr("data-category", k)
+						    	.attr("data-category", k)
 						    	.attr("data-type", "path")
 						    	.attr("class", "line")
 						    	.attr("d", scope.line)

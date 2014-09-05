@@ -27,6 +27,8 @@ app.directive('barChart', function(d3Service) {
 		        var color = d3.scale.category20();
 
 
+		        var tooltip = drawTooltip();
+
 		        // set listeners
 		        listeners();
 
@@ -83,12 +85,12 @@ app.directive('barChart', function(d3Service) {
 						.domain([min, max])
 						.range([height - margin/2, margin]);
 					
-					var tooltip = drawTooltip();
+					
 					// draw axes
 					drawAxes(yScale, yInvertedScale);
 
 					// draw rects
-					drawBars(data, yScale, numGroups, width, tooltip);
+					drawBars(data, yScale, numGroups, width);
 
 					// draw legend
 					drawLegend(data);
@@ -163,7 +165,7 @@ app.directive('barChart', function(d3Service) {
 				 }
 				};
 
-				function drawBars(data, yScale, numGroups, width, tooltip) {
+				function drawBars(data, yScale, numGroups, width) {
 					// each group gets equal width, whether
 					// stacked or not
 					var numSpaces = 2*numGroups; // nodes - 1 + 2 outsides

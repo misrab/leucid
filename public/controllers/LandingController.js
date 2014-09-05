@@ -90,28 +90,28 @@ app.controller('LandingController', function($scope, d3Service) {
     if (start === true) {
       $scope.graphData = {
           nodes: [
-            { id: 1, label: "cow", score: 20 },
-            { id: 2, label: "cow", score: 20 },
-            { id: 3, label: "cow", score: 20 },
+            { group: "cow", score: 20 },
+            { group: "cow", score: 20 },
+            { group: "cow", score: 20 },
 
-            { id: 4, label: "chicken", score: 10 },
-            { id: 5, label: "chicken", score: 10 },
-            { id: 6, label: "chicken", score: 10 },
+            { group: "chicken", score: 10 },
+            { group: "chicken", score: 10 },
+            { group: "chicken", score: 10 },
 
-            { id: 7, label: "chicken", score: 10 },
-            { id: 8, label: "chicken", score: 10 },
+            { group: "chicken", score: 10, color: "grey" },
+            { group: "chicken", score: 10, color: "grey" },
 
-            { id: 9, label: "chicken", score: 10 }
+            { group: "chicken", score: 10, color: "grey" }
           ],
           edges : [
-            { i: 0, j: 3 },
-            { i: 0, j: 4 },
-            { i: 0, j: 5 },
+            { source: 0, target: 3, group: "friends" },
+            { source: 0, target: 4, group: "complicated" },
+            { source: 0, target: 5, group: "longdistance" },
 
-            { i: 1, j: 6 },
-            { i: 1, j: 7 },
+            { source: 1, target: 6},
+            { source: 1, target: 7 },
 
-            { i: 2, j: 8 }
+            { source: 2, target: 8, group: "longdistance" }
           ]
         };
     }

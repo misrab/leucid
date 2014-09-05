@@ -27,6 +27,8 @@ app.directive('graph', function(d3Service) {
 		        var color = d3.scale.category20();
 
 
+		        var tooltip = drawTooltip();
+
 		        // set listeners
 		        listeners();
 
@@ -52,12 +54,31 @@ app.directive('graph', function(d3Service) {
 					}, true); // true for actual object equality, not pointers
 				};
 			
+				function drawTooltip() {
+					var tooltip = d3.select("body")
+						.append("div")
+						.style("position", "absolute")
+						.style("font-weight", "bold")
+						.style("text-align", "center")
+						.style("border", "1px solid grey")
+						.style("background-color", "#eaeaea")
+						.style("padding", "5px")
+						.style("z-index", "10")
+						.style("visibility", "hidden")
+						.text("a simple tooltip");
+
+					return tooltip;
+
+				};
 
 				function render(data) {
 					//remove all previous items before render
 					svg.selectAll('*').remove();
 					// If we don't pass any data, return out of the element
 					if (!data) return;
+
+					// addDefinitions();
+
 
 
 					var force = d3.layout.force()
@@ -78,14 +99,20 @@ app.directive('graph', function(d3Service) {
     				// put data into required format
     				for (index in data.nodes) {
     					graph.nodes.push({
+    						id: index, //data.nodes[index].id,
     						x: Math.random()*width,
-    						y: Math.random()*height
+    						y: Math.random()*height,
+    						group: data.nodes[index].group,
+    						color: data.nodes[index].color
     					});
     				}
+
     				for (index in data.edges) {
     					graph.links.push({
-    						source: data.edges[index].i,
-    						target: data.edges[index].j
+    						source: data.edges[index].source,
+    						target: data.edges[index].target,
+    						group: data.edges[index].group,
+    						color: data.edges[index].color
     					})
     				}
     				
@@ -96,17 +123,52 @@ app.directive('graph', function(d3Service) {
 				    link = link.data(graph.links)
 						.enter().append("line")
 					    .attr("class", "link")
-					    .attr("stroke", "black")
-    					.attr("stroke-width", 2);
+					    .attr("stroke", function(d) {
+					    	if (d.color) return d.color;
+					    	if (d.group) return color(d.group);
+					    	return "black";
+
+					    })
+    					.attr("stroke-width", 2)
+    					// tooltip
+					    .on("mouseover", function(d) {
+					    	if (!d.group || d.group===undefined) return;
+							tooltip.html(d.group);
+							return tooltip.style("visibility", "visible");
+						})
+						.on("mousemove", function(){
+							return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");
+						})
+						.on("mouseout", function(){
+							return tooltip.style("visibility", "hidden")
+						});
+    					//.attr("marker-end", "url(#arrowHead)");
 
 					node = node.data(graph.nodes)
 						.enter().append("circle")
 					    .attr("class", "node")
 					    .attr("r", 12)
-					    .attr("fill", "grey")
+					    .attr("fill", function(d) {
+					    	if (d.color) return d.color;
+					    	if (d.group) return color(d.group);
+					    	return "grey";
+
+					    })
 					    .attr("stroke", "black")
 					    .attr("stroke-width", 1)
+					    .style("cursor", "pointer")
 					    .on("dblclick", dblclick)
+					    // tooltip
+					    .on("mouseover", function(d) {
+							tooltip.html(d.group +", id: "+d.id);
+							return tooltip.style("visibility", "visible");
+						})
+						.on("mousemove", function(){
+							return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");
+						})
+						.on("mouseout", function(){
+							return tooltip.style("visibility", "hidden")
+						})
 					    .call(drag);
 
 					function tick() {
@@ -126,11 +188,25 @@ app.directive('graph', function(d3Service) {
 
 					function dragstart(d) {
 					  d3.select(this).classed("fixed", d.fixed = true);
-					  d3.select(this).attr("fill", "orange");
+					  d3.select(this).attr("fill", "#FFE135");
 					}
 
 
 				};
+
+				// function addDefinitions() {
+				// 	var defs = svg.append("defs");
+						
+				// 	defs.append("marker")
+				// 	    .attr("id", "arrowHead")
+				// 	    .attr("refX", -6) /*must be smarter way to calculate shift*/
+				// 	    .attr("refY", -2)
+				// 	    .attr("markerWidth", 6)
+				// 	    .attr("markerHeight", 4)
+				// 	    //.attr("orient", "right")
+				// 	    .append("path")
+				// 	        .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
+				// };
 			});
 		}
 	};

@@ -24,7 +24,7 @@ app.directive('scatterPlot', function(d3Service) {
 					xLabel = attrs.labelX || "x",
 					width = attrs.width || d3.select(element[0]).node().offsetWidth - margin,
 					height = attrs.height || 200,
-					radius = attrs.radius || 5;
+					radius = attrs.radius || 7;
 
 					
 
